@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <!-- Metadados da página -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10191e">
+  <meta name="description" content="Acesse o painel AutoStock para acompanhar seu estoque de veículos.">
+  <title>Entrar — AutoStock</title>
+
+  <!-- CSS-base do projeto -->
+  <link rel="stylesheet" href="/styles.css">
+
+  <!-- Estilos da tela de login e identidade visual -->
+  <link rel="stylesheet" href="/visual-addon.css">
+
+  <!-- JavaScript que busca e envia o token CSRF do formulário -->
+  <script src="/login.js" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-layout">
+    <section class="login-showcase" aria-label="Apresentação do AutoStock">
+      <div class="login-showcase-photo" role="img" aria-label="Carro esportivo em estúdio escuro"></div>
+      <div class="login-showcase-shade"></div>
+      <div class="login-brand-lockup">
+        <span class="login-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36"><path d="M5 21.5 7.7 14a3 3 0 0 1 2.8-2h15a3 3 0 0 1 2.8 2l2.7 7.5v7h-4v-2.2H9V28H5z"/><path d="M7.2 21h23l-1.8-5a1 1 0 0 0-.95-.7h-17a1 1 0 0 0-.95.7z"/><circle cx="10" cy="22.5" r="1.35"/><circle cx="27" cy="22.5" r="1.35"/><path d="M12 8h12"/></svg></span>
+        <span><strong>AutoStock</strong><small>GESTÃO AUTOMOTIVA</small></span>
+      </div>
+      <div class="login-showcase-copy">
+        <span class="login-kicker"><i></i> ESTOQUE EM MOVIMENTO</span>
+        <h1>Mais clareza<br>para cada <em>negócio.</em></h1>
+        <p>Seu inventário, seus indicadores e sua operação reunidos em um painel feito para acompanhar o ritmo da sua loja.</p>
+        <div class="login-benefits" aria-label="Recursos do AutoStock">
+          <span><i aria-hidden="true">✓</i> Estoque organizado</span>
+          <span><i aria-hidden="true">✓</i> Indicadores em um só lugar</span>
+          <span><i aria-hidden="true">✓</i> Acesso protegido</span>
+        </div>
+      </div>
+      <div class="login-showcase-footer"><span>CONTROLE QUE ACOMPANHA CADA OPORTUNIDADE</span><span>01 <i>/</i> AUTOSTOCK</span></div>
+    </section>
+
+    <section class="login-panel" aria-labelledby="loginTitle">
+      <div class="login-panel-top"><span class="login-panel-context"><span class="login-shield" aria-hidden="true">✓</span> Acesso administrativo</span><span class="login-secure"><i></i> Conexão protegida</span></div>
+      <div class="login-card">
+        <div class="login-mobile-brand">
+          <span class="login-brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36"><path d="M5 21.5 7.7 14a3 3 0 0 1 2.8-2h15a3 3 0 0 1 2.8 2l2.7 7.5v7h-4v-2.2H9V28H5z"/><path d="M7.2 21h23l-1.8-5a1 1 0 0 0-.95-.7h-17a1 1 0 0 0-.95.7z"/><circle cx="10" cy="22.5" r="1.35"/><circle cx="27" cy="22.5" r="1.35"/><path d="M12 8h12"/></svg></span>
+          <span><strong>AutoStock</strong><small>GESTÃO AUTOMOTIVA</small></span>
+        </div>
+        <span class="login-eyebrow">BEM-VINDA DE VOLTA</span>
+        <h2 id="loginTitle">Entre no seu painel.</h2>
+        <p class="login-intro">Acesse sua área de gestão para acompanhar o estoque.</p>
+
+        <div id="loginError" class="login-message login-message-error" role="alert" hidden>Usuário ou senha inválidos. Confira os dados e tente novamente.</div>
+        <div id="loginNotice" class="login-message login-message-success" role="status" hidden>Sua sessão foi encerrada com segurança.</div>
+        <div id="loginSetupError" class="login-message login-message-error" role="alert" hidden>Não foi possível preparar o acesso seguro. Atualize a página e tente novamente.</div>
+
+        <form id="loginForm" class="login-form" action="/login" method="post">
+          <input type="hidden" id="csrfToken" name="_csrf" value="">
+          <label class="login-field" for="username">
+            <span>Usuário</span>
+            <span class="login-input-wrap"><i class="field-user-icon" aria-hidden="true">◎</i><input id="username" name="username" type="text" autocomplete="username" placeholder="Digite seu usuário" required autofocus></span>
+          </label>
+          <label class="login-field" for="password">
+            <span>Senha</span>
+            <span class="login-input-wrap"><i class="field-lock-icon" aria-hidden="true">⌑</i><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required><button class="password-toggle" id="passwordToggle" type="button" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></span>
+          </label>
+          <button id="loginSubmit" class="login-submit" type="submit" disabled>Preparando acesso seguro <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="login-assurance"><span class="assurance-icon" aria-hidden="true">⌑</span><span><strong>Seu acesso é individual.</strong><br>Não compartilhe suas credenciais.</span></div>
+      </div>
+      <footer class="login-panel-footer"><span>AutoStock <i>•</i> Gestão de estoque de veículos</span><span>Área restrita</span></footer>
+    </section>
+  </main>
+</body>
+</html>

@@ -16,7 +16,6 @@ const state = {
   visibleVehicles: [],
   dialogMode: null,
   editingId: null,
-  confirming: null,
 };
 
 const formDialog = $("#formDialog");
@@ -25,12 +24,28 @@ const confirmDialog = $("#confirmDialog");
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const integer = new Intl.NumberFormat("pt-BR");
 
+/* Fotos ilustrativas usadas na vitrine */
+const showcasePhotos = [
+  {
+    src: "/assets/vehicles/showroom-sedan.jpg",
+    alt: "Foto ilustrativa de um sedã esportivo vermelho",
+  },
+  {
+    src: "/assets/vehicles/showroom-suv.jpg",
+    alt: "Foto ilustrativa de um SUV escuro em ambiente interno",
+  },
+  {
+    src: "/assets/vehicles/showroom-coupe.jpg",
+    alt: "Foto ilustrativa de um cupê esportivo em showroom",
+  },
+];
+
 
 /* ==========================================================================
-   UTILITÁRIOS
+   SEGURANÇA E API
    ========================================================================== */
 
-/* --- Comunicação com a API --- */
+/* --- Token CSRF --- */
 async function buscarTokenCsrf() {
   const response = await fetch("/api/csrf", {
     credentials: "same-origin",
@@ -38,20 +53,27 @@ async function buscarTokenCsrf() {
   });
 
   if (!response.ok) {
-    throw new Error("Não foi possível obter a proteção CSRF. Talvez seja necessário entrar novamente.");
+    throw new Error(
+      response.status === 401
+        ? "Sua sessão expirou. Entre novamente para continuar."
+        : "Não foi possível obter a proteção CSRF. Atualize a página e tente novamente."
+    );
   }
 
   return response.json();
 }
 
+/* --- Requisições --- */
 async function api(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
 
   const headers = {
+    Accept: "application/json",
     ...(options.body ? { "Content-Type": "application/json" } : {}),
     ...(options.headers || {}),
   };
 
+  // Métodos que alteram dados exigem o token CSRF
   if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
     const csrf = await buscarTokenCsrf();
     headers[csrf.headerName] = csrf.token;
@@ -79,10 +101,12 @@ async function api(url, options = {}) {
 
   if (!response.ok) {
     const message =
-      data?.mensagem ||
-      data?.message ||
-      (data?.erros ? Object.values(data.erros).join(" ") : null) ||
-      `Erro ${response.status} ao comunicar com a API.`;
+      response.status === 401
+        ? "Sua sessão expirou. Entre novamente para continuar."
+        : data?.mensagem ||
+          data?.message ||
+          (data?.erros ? Object.values(data.erros).join(" ") : null) ||
+          `Erro ${response.status} ao comunicar com a API.`;
 
     throw new Error(message);
   }
@@ -90,15 +114,20 @@ async function api(url, options = {}) {
   return data;
 }
 
+
+/* ==========================================================================
+   UTILITÁRIOS
+   ========================================================================== */
+
 /* --- Escape de HTML --- */
 function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
     "'": "&#39;",
-  }[c]));
+  }[character]));
 }
 
 /* --- Notificações --- */
@@ -141,19 +170,82 @@ function vehicleIcon() {
 
 
 /* ==========================================================================
+   VITRINE
+   ========================================================================== */
+function renderShowcase(rows) {
+  // Os 3 veículos disponíveis mais novos (desempate pelo maior preço)
+  const available = rows
+    .filter((vehicle) => vehicle.status === "DISPONIVEL")
+    .sort(
+      (a, b) =>
+        Number(b.anoFabricacao || 0) - Number(a.anoFabricacao || 0) ||
+        Number(b.preco || 0) - Number(a.preco || 0)
+    )
+    .slice(0, 3);
+
+  const container = $("#showroomGrid");
+
+  if (!available.length) {
+    container.innerHTML = `
+      <div class="showroom-empty">
+        <span class="showroom-empty-icon" aria-hidden="true">⌁</span>
+        <strong>Sua vitrine começa com o próximo veículo.</strong>
+        <span>Cadastre um veículo disponível para apresentá-lo aqui.</span>
+        <button class="button button-primary" type="button" data-add-showcase>
+          Adicionar veículo <span aria-hidden="true">→</span>
+        </button>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = available
+    .map((vehicle, index) => {
+      // Foto pela posição do card: 1º = sedan, 2º = suv, 3º = coupe
+      const photo = showcasePhotos[index % showcasePhotos.length];
+      const year = vehicle.anoFabricacao ?? "Ano não informado";
+      const mileage = `${integer.format(Number(vehicle.quilometragem || 0))} km`;
+
+      return `
+        <article class="showroom-card">
+          <div class="showroom-photo-wrap">
+            <img class="showroom-photo" src="${photo.src}" alt="${photo.alt}" loading="lazy">
+            <span class="showroom-photo-label">FOTO ILUSTRATIVA</span>
+            <span class="showroom-status"><i></i> Disponível</span>
+          </div>
+          <div class="showroom-card-body">
+            <div class="showroom-vehicle-kicker">${esc(vehicle.marca || "Marca não informada")} <span>•</span> ${esc(year)}</div>
+            <h3>${esc(vehicle.modelo || "Modelo não informado")}</h3>
+            <div class="showroom-meta">
+              <span><i aria-hidden="true">◷</i> ${esc(mileage)}</span>
+              <span>${esc(vehicle.cor || "Cor não informada")}</span>
+            </div>
+            <div class="showroom-card-footer">
+              <strong>${money.format(Number(vehicle.preco || 0))}</strong>
+              <button type="button" class="showroom-card-button" data-showcase-search="${esc(vehicle.modelo || "")}" aria-label="Ver ${esc(vehicle.modelo || "veículo")} no inventário">
+                Ver cadastro <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </article>`;
+    })
+    .join("");
+}
+
+
+/* ==========================================================================
    ESTATÍSTICAS E ANALYTICS
    ========================================================================== */
 function updateStats() {
   const rows = state.veiculos;
-  const available = rows.filter((v) => v.status === "DISPONIVEL");
-  const sold = rows.filter((v) => v.status === "VENDIDO");
+  const available = rows.filter((vehicle) => vehicle.status === "DISPONIVEL");
+  const sold = rows.filter((vehicle) => vehicle.status === "VENDIDO");
 
   // Cards principais
   $("#statTotal").textContent = integer.format(rows.length);
   $("#statAvailable").textContent = integer.format(available.length);
   $("#statSold").textContent = integer.format(sold.length);
 
-  const availableSum = available.reduce((sum, v) => sum + Number(v.preco || 0), 0);
+  const availableSum = available.reduce((sum, vehicle) => sum + Number(vehicle.preco || 0), 0);
   $("#statValue").textContent = money.format(availableSum);
 
   $("#totalTrack").style.width = rows.length
@@ -166,16 +258,17 @@ function updateStats() {
   );
 
   const avgMileage = rows.length
-    ? rows.reduce((sum, v) => sum + Number(v.quilometragem || 0), 0) / rows.length
+    ? rows.reduce((sum, vehicle) => sum + Number(vehicle.quilometragem || 0), 0) / rows.length
     : 0;
   $("#avgMileage").textContent = `${integer.format(Math.round(avgMileage))} km`;
 
   const brandCount = new Set(
-    rows.map((v) => String(v.marca || "").trim()).filter(Boolean)
+    rows.map((vehicle) => String(vehicle.marca || "").trim()).filter(Boolean)
   ).size;
   $("#brandCount").textContent = integer.format(brandCount);
 
   renderAnalytics(rows);
+  renderShowcase(rows);
 }
 
 function renderAnalytics(rows) {
@@ -183,37 +276,37 @@ function renderAnalytics(rows) {
 
   // --- Distribuição por situação ---
   const counts = { DISPONIVEL: 0, VENDIDO: 0, DESCONTINUADO: 0 };
-  rows.forEach((v) => {
-    if (Object.hasOwn(counts, v.status)) counts[v.status]++;
+  rows.forEach((vehicle) => {
+    if (Object.hasOwn(counts, vehicle.status)) counts[vehicle.status] += 1;
   });
 
-  const pct = (status) => (total ? (counts[status] / total) * 100 : 0);
+  const percent = (status) => (total ? (counts[status] / total) * 100 : 0);
 
   $("#statusAnalytics").innerHTML = `
     <div class="status-track" aria-label="Distribuição do estoque por situação">
-      <span class="status-segment segment-available" style="width:${pct("DISPONIVEL")}%"></span>
-      <span class="status-segment segment-sold" style="width:${pct("VENDIDO")}%"></span>
-      <span class="status-segment segment-discontinued" style="width:${pct("DESCONTINUADO")}%"></span>
+      <span class="status-segment segment-available" style="width:${percent("DISPONIVEL")}%"></span>
+      <span class="status-segment segment-sold" style="width:${percent("VENDIDO")}%"></span>
+      <span class="status-segment segment-discontinued" style="width:${percent("DESCONTINUADO")}%"></span>
     </div>
     <div class="status-legend">
       <div class="legend-item">
         <i class="legend-dot legend-available"></i>
-        <span>Disponíveis<strong>${counts.DISPONIVEL} · ${pct("DISPONIVEL").toFixed(0)}%</strong></span>
+        <span>Disponíveis<strong>${counts.DISPONIVEL} · ${percent("DISPONIVEL").toFixed(0)}%</strong></span>
       </div>
       <div class="legend-item">
         <i class="legend-dot legend-sold"></i>
-        <span>Vendidos<strong>${counts.VENDIDO} · ${pct("VENDIDO").toFixed(0)}%</strong></span>
+        <span>Vendidos<strong>${counts.VENDIDO} · ${percent("VENDIDO").toFixed(0)}%</strong></span>
       </div>
       <div class="legend-item">
         <i class="legend-dot legend-discontinued"></i>
-        <span>Descontinuados<strong>${counts.DESCONTINUADO} · ${pct("DESCONTINUADO").toFixed(0)}%</strong></span>
+        <span>Descontinuados<strong>${counts.DESCONTINUADO} · ${percent("DESCONTINUADO").toFixed(0)}%</strong></span>
       </div>
     </div>`;
 
   // --- Top 5 marcas ---
   const byBrand = new Map();
-  rows.forEach((v) => {
-    const name = String(v.marca || "Sem marca");
+  rows.forEach((vehicle) => {
+    const name = String(vehicle.marca || "Sem marca");
     byBrand.set(name, (byBrand.get(name) || 0) + 1);
   });
 
@@ -261,25 +354,25 @@ function renderRows(rows) {
   }
 
   body.innerHTML = rows
-    .map((v) => `
+    .map((vehicle) => `
       <tr>
         <td>
           <div class="vehicle-cell">
             <span class="vehicle-thumb">${vehicleIcon()}</span>
             <span>
-              <span class="vehicle-name">${esc(v.modelo || "Modelo")}</span>
-              <span class="vehicle-brand">${esc(v.marca || "Marca não informada")} · ${esc(v.cor || "")}</span>
+              <span class="vehicle-name">${esc(vehicle.modelo || "Modelo")}</span>
+              <span class="vehicle-brand">${esc(vehicle.marca || "Marca não informada")} · ${esc(vehicle.cor || "")}</span>
             </span>
           </div>
         </td>
-        <td class="year-cell">${esc(v.anoFabricacao ?? "—")}</td>
-        <td class="muted-cell">${integer.format(Number(v.quilometragem || 0))} km</td>
-        <td class="price-cell">${money.format(Number(v.preco || 0))}</td>
-        <td><span class="status-badge ${statusClass(v.status)}">${esc(statusLabel(v.status))}</span></td>
+        <td class="year-cell">${esc(vehicle.anoFabricacao ?? "—")}</td>
+        <td class="muted-cell">${integer.format(Number(vehicle.quilometragem || 0))} km</td>
+        <td class="price-cell">${money.format(Number(vehicle.preco || 0))}</td>
+        <td><span class="status-badge ${statusClass(vehicle.status)}">${esc(statusLabel(vehicle.status))}</span></td>
         <td>
           <div class="row-actions">
-            <button class="icon-button" data-action="edit" data-id="${v.id}" title="Editar veículo" aria-label="Editar veículo">✎</button>
-            <button class="icon-button delete" data-action="delete" data-id="${v.id}" title="Excluir veículo" aria-label="Excluir veículo">⌫</button>
+            <button class="icon-button" data-action="edit" data-id="${esc(vehicle.id)}" title="Editar veículo" aria-label="Editar veículo">✎</button>
+            <button class="icon-button delete" data-action="delete" data-id="${esc(vehicle.id)}" title="Excluir veículo" aria-label="Excluir veículo">⌫</button>
           </div>
         </td>
       </tr>`)
@@ -293,7 +386,7 @@ function renderRows(rows) {
 async function loadAll() {
   $("#vehicleRows").innerHTML = `
     <tr>
-      <td colspan="6" class="loading-cell"><span class="spinner"></span>Sincronizando inventário...</td>
+      <td colspan="6" class="loading-cell"><span class="spinner"></span>Sincronizando inventário…</td>
     </tr>`;
 
   try {
@@ -310,12 +403,14 @@ async function loadAll() {
     updateStats();
     await loadVehicles();
   } catch (error) {
+    const safeMessage = esc(error.message);
+
     $("#vehicleRows").innerHTML = `
       <tr>
         <td colspan="6" class="empty-cell">
           <div class="empty-state">
             <strong>Não foi possível carregar os dados</strong>
-            <span>${esc(error.message)} Confirme se a aplicação Spring Boot está rodando.</span>
+            <span>${safeMessage} Confirme se a aplicação está rodando e se sua sessão continua ativa.</span>
           </div>
         </td>
       </tr>`;
@@ -340,8 +435,8 @@ async function loadVehicles() {
 
     // A busca por texto é feita no cliente (marca, modelo ou cor)
     if (search) {
-      rows = rows.filter((v) =>
-        [v.marca, v.modelo, v.cor].some((value) =>
+      rows = rows.filter((vehicle) =>
+        [vehicle.marca, vehicle.modelo, vehicle.cor].some((value) =>
           String(value || "").toLocaleLowerCase("pt-BR").includes(search)
         )
       );
@@ -367,7 +462,7 @@ function field(label, name, type = "text", value = "", extra = "") {
 
 function renderVehicleFields(record) {
   const modelOptions = state.modelos
-    .map((m) => `<option value="${m.id}" ${record?.modeloId === m.id ? "selected" : ""}>${esc(m.marcaNome)} · ${esc(m.nome)}</option>`)
+    .map((model) => `<option value="${esc(model.id)}" ${record?.modeloId === model.id ? "selected" : ""}>${esc(model.marcaNome)} · ${esc(model.nome)}</option>`)
     .join("");
 
   const isSelected = (status) => (record?.status === status ? "selected" : "");
@@ -411,7 +506,7 @@ function renderVehicleFields(record) {
 
 function renderModelFields() {
   const brandOptions = state.marcas
-    .map((m) => `<option value="${m.id}">${esc(m.nome)}</option>`)
+    .map((brand) => `<option value="${esc(brand.id)}">${esc(brand.nome)}</option>`)
     .join("");
 
   $("#dialogFields").innerHTML = `
@@ -443,7 +538,7 @@ function openForm(mode, record = null) {
       ? "Informe os detalhes para manter o inventário atualizado."
       : "Adicione as informações para organizar seu catálogo.";
 
-  $("#saveDialog").innerHTML = `${record ? "Salvar alterações" : "Salvar cadastro"} <span>→</span>`;
+  $("#saveDialog").innerHTML = `${record ? "Salvar alterações" : "Salvar cadastro"} <span aria-hidden="true">→</span>`;
 
   if (mode === "vehicle") {
     renderVehicleFields(record);
@@ -460,7 +555,11 @@ async function saveForm(event) {
   event.preventDefault();
 
   const form = new FormData(event.currentTarget);
-  let url, method, payload;
+  const wasEditing = Boolean(state.editingId);
+
+  let url;
+  let method;
+  let payload;
 
   if (state.dialogMode === "brand") {
     url = API.marcas;
@@ -488,18 +587,18 @@ async function saveForm(event) {
 
   const button = $("#saveDialog");
   button.disabled = true;
-  button.textContent = "Salvando...";
+  button.textContent = "Salvando…";
 
   try {
     await api(url, { method, body: JSON.stringify(payload) });
     formDialog.close();
-    toast(state.editingId ? "Veículo atualizado." : "Cadastro realizado.");
+    toast(wasEditing ? "Veículo atualizado." : "Cadastro realizado.");
     await loadAll();
   } catch (error) {
     toast(error.message, "error");
   } finally {
     button.disabled = false;
-    button.innerHTML = `${state.editingId ? "Salvar alterações" : "Salvar cadastro"} <span>→</span>`;
+    button.innerHTML = `${wasEditing ? "Salvar alterações" : "Salvar cadastro"} <span aria-hidden="true">→</span>`;
   }
 }
 
@@ -507,6 +606,14 @@ async function saveForm(event) {
 /* ==========================================================================
    EXPORTAÇÃO CSV
    ========================================================================== */
+
+/* Protege contra injeção de fórmulas (=, +, -, @) ao abrir no Excel */
+function safeCsvCell(value) {
+  let text = String(value ?? "");
+  if (/^\s*[=+@-]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 function exportCsv() {
   const rows = state.visibleVehicles || [];
 
@@ -526,29 +633,27 @@ function exportCsv() {
     "Situação",
   ];
 
-  const values = rows.map((v) => [
-    v.id,
-    v.marca,
-    v.modelo,
-    v.anoFabricacao,
-    v.cor,
-    Number(v.preco || 0).toFixed(2),
-    v.quilometragem,
-    statusLabel(v.status),
+  const values = rows.map((vehicle) => [
+    vehicle.id,
+    vehicle.marca,
+    vehicle.modelo,
+    vehicle.anoFabricacao,
+    vehicle.cor,
+    Number(vehicle.preco || 0).toFixed(2),
+    vehicle.quilometragem,
+    statusLabel(vehicle.status),
   ]);
-
-  const csvCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
   const csv =
     "\uFEFF" +
-    [columns, ...values].map((row) => row.map(csvCell).join(";")).join("\r\n");
+    [columns, ...values].map((row) => row.map(safeCsvCell).join(";")).join("\r\n");
 
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `autostock-veiculos-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `autostock-veiculos-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.click();
   URL.revokeObjectURL(url);
 
   toast(`${rows.length} veículo(s) exportado(s) para CSV.`);
@@ -578,7 +683,7 @@ async function onTableClick(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
 
-  const record = state.veiculos.find((v) => String(v.id) === button.dataset.id);
+  const record = state.veiculos.find((vehicle) => String(vehicle.id) === button.dataset.id);
   if (!record) return;
 
   if (button.dataset.action === "edit") {
@@ -596,6 +701,31 @@ async function onTableClick(event) {
     } catch (error) {
       toast(error.message, "error");
     }
+  }
+}
+
+
+/* ==========================================================================
+   SESSÃO (logout)
+   ========================================================================== */
+async function prepareLogout(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = form.querySelector("button[type='submit']");
+  button.disabled = true;
+
+  try {
+    const csrf = await buscarTokenCsrf();
+
+    const tokenInput = $("#logoutCsrfToken");
+    tokenInput.name = csrf.parameterName || "_csrf";
+    tokenInput.value = csrf.token;
+
+    form.submit();
+  } catch (error) {
+    button.disabled = false;
+    toast(error.message, "error");
   }
 }
 
@@ -625,6 +755,24 @@ confirmDialog.addEventListener("click", (event) => {
 /* --- Tabela --- */
 $("#vehicleRows").addEventListener("click", onTableClick);
 
+/* --- Vitrine --- */
+$("#showroomGrid").addEventListener("click", (event) => {
+  if (event.target.closest("[data-add-showcase]")) {
+    openForm("vehicle");
+    return;
+  }
+
+  const cardButton = event.target.closest("[data-showcase-search]");
+  if (!cardButton) return;
+
+  $("#filterSearch").value = cardButton.dataset.showcaseSearch;
+  $("#filterStatus").value = "";
+  $("#filterYear").value = "";
+  loadVehicles();
+
+  $("#inventory").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 /* --- Filtros --- */
 $("#filterSearch").addEventListener("input", loadVehicles);
 $("#filterStatus").addEventListener("change", loadVehicles);
@@ -642,18 +790,9 @@ $("#refreshButton").addEventListener("click", loadAll);
 $("#exportCsvButton").addEventListener("click", exportCsv);
 $("#printReportButton").addEventListener("click", () => window.print());
 
-$("#logoutButton").addEventListener("click", async () => {
-  const button = $("#logoutButton");
-  button.disabled = true;
+/* --- Sessão --- */
+$("#logoutForm").addEventListener("submit", prepareLogout);
 
-  try {
-    await api("/logout", { method: "POST" });
-    window.location.assign("/login?logout");
-  } catch (error) {
-    toast(error.message, "error");
-    button.disabled = false;
-  }
-});
 
 /* ==========================================================================
    INICIALIZAÇÃO
