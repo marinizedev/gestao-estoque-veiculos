@@ -31,13 +31,37 @@ const integer = new Intl.NumberFormat("pt-BR");
    ========================================================================== */
 
 /* --- Comunicação com a API --- */
+async function buscarTokenCsrf() {
+  const response = await fetch("/api/csrf", {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error("Não foi possível obter a proteção CSRF. Talvez seja necessário entrar novamente.");
+  }
+
+  return response.json();
+}
+
 async function api(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+
+  const headers = {
+    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.headers || {}),
+  };
+
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
+    const csrf = await buscarTokenCsrf();
+    headers[csrf.headerName] = csrf.token;
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {}),
-    },
+    method,
+    credentials: "same-origin",
+    headers,
   });
 
   if (response.status === 204) return null;
@@ -618,6 +642,18 @@ $("#refreshButton").addEventListener("click", loadAll);
 $("#exportCsvButton").addEventListener("click", exportCsv);
 $("#printReportButton").addEventListener("click", () => window.print());
 
+$("#logoutButton").addEventListener("click", async () => {
+  const button = $("#logoutButton");
+  button.disabled = true;
+
+  try {
+    await api("/logout", { method: "POST" });
+    window.location.assign("/login?logout");
+  } catch (error) {
+    toast(error.message, "error");
+    button.disabled = false;
+  }
+});
 
 /* ==========================================================================
    INICIALIZAÇÃO
