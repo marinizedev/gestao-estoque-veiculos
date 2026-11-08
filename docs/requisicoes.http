@@ -1,0 +1,65 @@
+@baseUrl = http://localhost:8080
+
+### Cadastrar marca
+POST {{baseUrl}}/api/marcas
+Content-Type: application/json
+
+{
+  "nome": "Toyota"
+}
+
+### Listar marcas
+GET {{baseUrl}}/api/marcas
+
+### Cadastrar modelo (ajuste marcaId conforme o ID retornado acima)
+POST {{baseUrl}}/api/modelos
+Content-Type: application/json
+
+{
+  "nome": "Corolla",
+  "marcaId": 1
+}
+
+### Listar modelos
+GET {{baseUrl}}/api/modelos
+
+### Cadastrar veículo (ajuste modeloId conforme o ID retornado acima)
+POST {{baseUrl}}/api/veiculos
+Content-Type: application/json
+
+{
+  "modeloId": 1,
+  "anoFabricacao": 2022,
+  "cor": "Prata",
+  "preco": 125000.00,
+  "quilometragem": 35000,
+  "status": "DISPONIVEL"
+}
+
+### Listar veículos
+GET {{baseUrl}}/api/veiculos
+
+### Filtrar por marca, ano e status
+GET {{baseUrl}}/api/veiculos?marca=Toyota&ano=2022&status=DISPONIVEL
+
+### Filtrar por faixa de preço
+GET {{baseUrl}}/api/veiculos?precoMin=50000&precoMax=150000
+
+### Consultar veículo por ID
+GET {{baseUrl}}/api/veiculos/1
+
+### Atualizar veículo (PUT substitui todos os campos do cadastro)
+PUT {{baseUrl}}/api/veiculos/1
+Content-Type: application/json
+
+{
+  "modeloId": 1,
+  "anoFabricacao": 2022,
+  "cor": "Prata",
+  "preco": 120000.00,
+  "quilometragem": 36000,
+  "status": "VENDIDO"
+}
+
+### Excluir cadastro por ID
+DELETE {{baseUrl}}/api/veiculos/1
