@@ -78,6 +78,11 @@ As credenciais do MySQL e as credenciais de login do AutoStock são diferentes. 
 
 O arquivo `.env` é ignorado pelo Git e **não deve ser enviado ao GitHub**. O repositório contém apenas `.env.example`, que serve como modelo. Não coloque senhas reais em `application.properties`, no README ou em commits.
 
+> APP_ADMIN_PASSWORD deve ter pelo menos 14 caracteres e não pode exceder 72 bytes em UTF-8. O
+> valor TROQUE_ISTO em .env.example é um marcador intencionalmente inválido: substitua-o por uma
+> senha local forte antes de iniciar a aplicação. Se ele permanecer, a aplicação será
+> interrompida pela validação de configuração.
+
 ### 4. Testar o projeto
 
 Na raiz do projeto, execute:
