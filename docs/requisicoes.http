@@ -45,6 +45,12 @@ GET {{baseUrl}}/api/veiculos?marca=Toyota&ano=2022&status=DISPONIVEL
 ### Filtrar por faixa de preço
 GET {{baseUrl}}/api/veiculos?precoMin=50000&precoMax=150000
 
+### Filtrar por modelo
+GET {{baseUrl}}/api/veiculos?modelo=Corolla
+
+### Filtrar por marca, modelo e faixa de preço
+GET {{baseUrl}}/api/veiculos?marca=Toyota&modelo=Corolla&precoMin=100000&precoMax=150000
+
 ### Consultar veículo por ID
 GET {{baseUrl}}/api/veiculos/1
 

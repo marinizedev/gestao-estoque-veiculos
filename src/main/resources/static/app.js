@@ -383,6 +383,59 @@ function renderRows(rows) {
 /* ==========================================================================
    CARREGAMENTO DE DADOS
    ========================================================================== */
+
+function populateFilterOptions() {
+  const brandSelect = $("#filterBrand");
+  const selectedBrand = brandSelect.value;
+
+  const brandOptions = [...state.marcas]
+    .filter((brand) => brand.nome)
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+    .map((brand) => new Option(brand.nome, brand.nome));
+
+  brandSelect.replaceChildren(
+    new Option("Todas as marcas", ""),
+    ...brandOptions
+  );
+
+  if ([...brandSelect.options].some((option) => option.value === selectedBrand)) {
+    brandSelect.value = selectedBrand;
+  }
+
+  const modelSelect = $("#filterModel");
+  const selectedModel = modelSelect.value;
+  const selectedBrandName = brandSelect.value;
+
+  const modelOptions = [...state.modelos]
+    .filter(
+      (model) =>
+        model.nome &&
+        (!selectedBrandName || model.marcaNome === selectedBrandName)
+    )
+    .sort((a, b) =>
+      `${a.marcaNome || ""} ${a.nome}`.localeCompare(
+        `${b.marcaNome || ""} ${b.nome}`,
+        "pt-BR"
+      )
+    )
+    .map(
+      (model) =>
+        new Option(
+          `${model.marcaNome || "Marca"} · ${model.nome}`,
+          String(model.id)
+        )
+    );
+
+  modelSelect.replaceChildren(
+    new Option("Todos os modelos", ""),
+    ...modelOptions
+  );
+
+  if ([...modelSelect.options].some((option) => option.value === selectedModel)) {
+    modelSelect.value = selectedModel;
+  }
+}
+
 async function loadAll() {
   $("#vehicleRows").innerHTML = `
     <tr>
@@ -400,6 +453,7 @@ async function loadAll() {
     state.modelos = modelos || [];
     state.veiculos = veiculos || [];
 
+    populateFilterOptions();
     updateStats();
     await loadVehicles();
   } catch (error) {
@@ -427,13 +481,43 @@ async function loadVehicles() {
   const year = $("#filterYear").value;
   const search = $("#filterSearch").value.trim().toLocaleLowerCase("pt-BR");
 
+  const selectedBrand = $("#filterBrand").value;
+  const selectedModelId = $("#filterModel").value;
+  const selectedModel = state.modelos.find(
+    (model) => String(model.id) === selectedModelId
+  );
+
+  const priceMin = $("#filterPriceMin").value.trim();
+  const priceMax = $("#filterPriceMax").value.trim();
+
+  if (
+    (priceMin && Number(priceMin) < 0) ||
+    (priceMax && Number(priceMax) < 0)
+  ) {
+    toast("Os valores de preço não podem ser negativos.", "error");
+    return;
+  }
+
+  if (priceMin && priceMax && Number(priceMin) > Number(priceMax)) {
+    toast("O preço mínimo não pode ser maior que o preço máximo.", "error");
+    return;
+  }
+
   if (status) params.set("status", status);
   if (year) params.set("ano", year);
+
+  // Se escolher um modelo sem escolher marca, também restringimos à marca dele.
+  const brand = selectedBrand || selectedModel?.marcaNome || "";
+  if (brand) params.set("marca", brand);
+  if (selectedModel) params.set("modelo", selectedModel.nome);
+
+  if (priceMin) params.set("precoMin", priceMin);
+  if (priceMax) params.set("precoMax", priceMax);
 
   try {
     let rows = await api(`${API.veiculos}${params.size ? `?${params}` : ""}`);
 
-    // A busca por texto é feita no cliente (marca, modelo ou cor)
+    // A busca textual continua sendo feita no navegador.
     if (search) {
       rows = rows.filter((vehicle) =>
         [vehicle.marca, vehicle.modelo, vehicle.cor].some((value) =>
@@ -729,6 +813,22 @@ async function prepareLogout(event) {
   }
 }
 
+/* ==========================================================================
+   AUXILIAR
+   ========================================================================== */
+
+function clearFilterFields() {
+  $("#filterSearch").value = "";
+  $("#filterStatus").value = "";
+  $("#filterYear").value = "";
+  $("#filterBrand").value = "";
+  $("#filterModel").value = "";
+  $("#filterPriceMin").value = "";
+  $("#filterPriceMax").value = "";
+
+  populateFilterOptions();
+}
+
 
 /* ==========================================================================
    EVENTOS
@@ -765,9 +865,8 @@ $("#showroomGrid").addEventListener("click", (event) => {
   const cardButton = event.target.closest("[data-showcase-search]");
   if (!cardButton) return;
 
+  clearFilterFields();
   $("#filterSearch").value = cardButton.dataset.showcaseSearch;
-  $("#filterStatus").value = "";
-  $("#filterYear").value = "";
   loadVehicles();
 
   $("#inventory").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -778,10 +877,17 @@ $("#filterSearch").addEventListener("input", loadVehicles);
 $("#filterStatus").addEventListener("change", loadVehicles);
 $("#filterYear").addEventListener("input", loadVehicles);
 
+$("#filterBrand").addEventListener("change", () => {
+  populateFilterOptions();
+  loadVehicles();
+});
+
+$("#filterModel").addEventListener("change", loadVehicles);
+$("#filterPriceMin").addEventListener("change", loadVehicles);
+$("#filterPriceMax").addEventListener("change", loadVehicles);
+
 $("#resetFilters").addEventListener("click", () => {
-  $("#filterSearch").value = "";
-  $("#filterStatus").value = "";
-  $("#filterYear").value = "";
+  clearFilterFields();
   loadVehicles();
 });
 
