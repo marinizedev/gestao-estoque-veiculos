@@ -16,7 +16,7 @@ Sistema acadêmico para cadastro e gerenciamento do estoque de veículos de uma 
 ## Tecnologias
 
 - Java 17
-- Spring Boot
+- Spring Boot 4.1.2
 - Spring Security
 - Spring Data JPA / Hibernate
 - MySQL 8
@@ -74,6 +74,8 @@ Edite o arquivo `.env` e informe:
 - `APP_ADMIN_USERNAME`: nome de usuário para entrar no sistema.
 - `APP_ADMIN_PASSWORD`: senha para entrar no sistema.
 
+`APP_ADMIN_PASSWORD` deve ter no mínimo 14 caracteres e não pode ultrapassar 72 bytes em UTF-8. O valor de exemplo do `.env.example` é apenas um marcador e precisa ser substituído por uma senha local forte antes de iniciar a aplicação. Não compartilhe nem versione o arquivo `.env`.
+
 As credenciais do MySQL e as credenciais de login do AutoStock são diferentes. Use valores locais e seguros; não reutilize senhas pessoais.
 
 O arquivo `.env` é ignorado pelo Git e **não deve ser enviado ao GitHub**. O repositório contém apenas `.env.example`, que serve como modelo. Não coloque senhas reais em `application.properties`, no README ou em commits.
@@ -107,6 +109,8 @@ Quando a inicialização terminar, abra no navegador:
 http://localhost:8080
 ```
 
+Esse endereço é local: funciona na máquina onde a aplicação está executando. Clonar o repositório não publica o sistema na internet nem permite que o tutor acesse automaticamente a sua máquina. Para avaliar localmente, é necessário executar o projeto e configurar um banco MySQL e um arquivo `.env` nessa máquina.
+
 A aplicação encaminhará o acesso à página de login. Entre usando `APP_ADMIN_USERNAME` e `APP_ADMIN_PASSWORD`, definidos no seu arquivo `.env`.
 
 Se alterar qualquer valor no `.env`, pare e reinicie a aplicação para carregar as novas configurações.
@@ -131,19 +135,27 @@ No terminal em que a aplicação está rodando, pressione:
 Ctrl + C
 ```
 
-## API REST
+## API REST e autenticação
 
-Os endpoints da API são protegidos por autenticação. A interface web usa esses endpoints para operar o sistema.
+A API é protegida por autenticação baseada em sessão. Sem estar autenticado, uma requisição a um endpoint protegido, como `/api/veiculos`, deve receber HTTP `401 Unauthorized`.
 
-- `/api/marcas` — marcas.
-- `/api/modelos` — modelos.
-- `/api/veiculos` — veículos e filtros.
-- `/api/csrf` — token CSRF utilizado pela aplicação web.
+Para demonstrar o sistema, a forma recomendada é iniciar a aplicação, abrir `http://localhost:8080`, entrar com o usuário e a senha definidos em `APP_ADMIN_USERNAME` e `APP_ADMIN_PASSWORD` no `.env` local e usar a interface do AutoStock. O painel chama a API mantendo a sessão autenticada.
 
-Exemplo de consulta autenticada:
+Os endpoints principais são:
 
-```text
-GET /api/veiculos
+- `/api/marcas` — consulta e gerenciamento de marcas.
+- `/api/modelos` — consulta e gerenciamento de modelos.
+- `/api/veiculos` — consulta, gerenciamento e filtros de veículos.
+- `/api/csrf` — fornece o token CSRF utilizado para proteger operações que alteram dados.
+
+As operações de criação, edição e exclusão exigem, além da sessão autenticada, um token CSRF válido. Por isso, exemplos de requisições não devem ser enviados como se fossem endpoints públicos. O arquivo `docs/requisicoes.http` reúne exemplos de chamadas e filtros; ao testá-los manualmente, use uma sessão autenticada e envie o token CSRF nas requisições que alteram dados.
+
+A API permite filtrar veículos por marca, modelo, ano, preço mínimo, preço máximo e situação. Exemplos:
+
+```http
+GET /api/veiculos?marca=Toyota&ano=2022&status=DISPONIVEL
+GET /api/veiculos?modelo=Corolla
+GET /api/veiculos?precoMin=50000&precoMax=150000
 ```
 
 ## Estrutura principal do projeto
