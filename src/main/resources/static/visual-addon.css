@@ -883,6 +883,44 @@ button {
   color: var(--green-dark);
 }
 
+/* Ajustes adicionais para os filtros do inventário */
+.filter-bar {
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1 1 220px;
+}
+
+.filter-select {
+  min-width: 120px;
+  flex: 0 1 135px;
+}
+
+.brand-filter {
+  flex-basis: 135px;
+}
+
+.model-filter {
+  flex: 1 1 165px;
+}
+
+.price-filter {
+  min-width: 100px;
+  max-width: 125px;
+  flex: 0 1 110px;
+}
+
+.year-filter {
+  min-width: 75px;
+  max-width: 80px;
+  flex: 0 1 80px;
+}
+
+.clear-filters {
+  margin-left: auto;
+}
+
 
 /* ==========================================================================
    TABELA
@@ -1620,6 +1658,14 @@ td {
   .clear-filters {
     text-align: left;
     padding-left: 2px;
+  }
+
+  .price-filter {
+    max-width: none;
+  }
+
+.clear-filters {
+    margin-left: 0;
   }
 
   /* Tabela */
