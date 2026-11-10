@@ -5,11 +5,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "veiculo")
-public class Veiculo {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class Veiculo extends EntidadeBase {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "modelo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_veiculo_modelo"))
     private Modelo modelo;
@@ -42,7 +38,6 @@ public class Veiculo {
         this.status = status;
     }
 
-    public Long getId() { return id; }
     public Modelo getModelo() { return modelo; }
     public void setModelo(Modelo modelo) { this.modelo = modelo; }
     public Integer getAnoFabricacao() { return anoFabricacao; }

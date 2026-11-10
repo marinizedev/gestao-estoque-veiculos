@@ -23,6 +23,10 @@ Sistema acadêmico para cadastro e gerenciamento do estoque de veículos de uma 
 - Maven
 - HTML, CSS e JavaScript
 
+## Aplicação de programação orientada a objetos
+
+O domínio é representado pelas classes `Marca`, `Modelo` e `Veiculo`, com atributos encapsulados e métodos de acesso. As classes compartilham a superclasse abstrata `EntidadeBase`, que centraliza o identificador gerado pelo banco e é marcada com `@MappedSuperclass`; assim, o campo `id` é herdado e mapeado nas tabelas concretas, sem criar uma tabela adicional. As associações entre `Modelo` e `Marca`, e entre `Veiculo` e `Modelo`, representam os vínculos do domínio. A herança foi aplicada para reutilizar um comportamento persistente realmente comum, sem criar subclasses artificiais como `Carro` ou `Moto`, que não correspondem a categorias diferentes no modelo atual.
+
 ## Requisitos para execução local
 
 - Java 17 instalado.

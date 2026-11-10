@@ -66,6 +66,21 @@ class VeiculoRepositoryFilterTest {
     }
 
     @Test
+    void deveGerarIdentificadorHerdadoNasEntidades() {
+        assertThat(marcaRepository.findAll())
+            .extracting(Marca::getId)
+            .doesNotContainNull();
+
+        assertThat(modeloRepository.findAll())
+            .extracting(Modelo::getId)
+            .doesNotContainNull();
+
+        assertThat(veiculoRepository.findAll())
+            .extracting(Veiculo::getId)
+            .doesNotContainNull();
+    }
+
+    @Test
     void deveFiltrarPorMarcaEModeloParciaisSemDiferenciarMaiusculas() {
         List<Veiculo> encontrados = veiculoRepository.buscarComFiltros(
             "toy",
