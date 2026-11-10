@@ -4,11 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "marca", uniqueConstraints = @UniqueConstraint(name = "uq_marca_nome", columnNames = "nome"))
-public class Marca {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class Marca extends EntidadeBase {
     @Column(nullable = false, length = 100)
     private String nome;
 
@@ -16,7 +12,6 @@ public class Marca {
 
     public Marca(String nome) { this.nome = nome; }
 
-    public Long getId() { return id; }
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 }
