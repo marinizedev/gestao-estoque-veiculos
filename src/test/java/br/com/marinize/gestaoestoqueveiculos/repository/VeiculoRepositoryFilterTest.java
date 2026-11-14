@@ -3,6 +3,7 @@ package br.com.marinize.gestaoestoqueveiculos.repository;
 import br.com.marinize.gestaoestoqueveiculos.entity.Marca;
 import br.com.marinize.gestaoestoqueveiculos.entity.Modelo;
 import br.com.marinize.gestaoestoqueveiculos.entity.StatusVeiculo;
+import br.com.marinize.gestaoestoqueveiculos.entity.TipoVeiculo;
 import br.com.marinize.gestaoestoqueveiculos.entity.Veiculo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class VeiculoRepositoryFilterTest {
         veiculoRepository.saveAll(List.of(
             new Veiculo(
                 corolla,
+                TipoVeiculo.SEDA,
                 2022,
                 "Prata",
                 new BigDecimal("125000.00"),
@@ -46,6 +48,7 @@ class VeiculoRepositoryFilterTest {
             ),
             new Veiculo(
                 yaris,
+                TipoVeiculo.HATCH,
                 2020,
                 "Cinza",
                 new BigDecimal("78500.00"),
@@ -54,6 +57,7 @@ class VeiculoRepositoryFilterTest {
             ),
             new Veiculo(
                 civic,
+                TipoVeiculo.SEDA,
                 2024,
                 "Azul",
                 new BigDecimal("132000.00"),
@@ -88,6 +92,7 @@ class VeiculoRepositoryFilterTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -99,6 +104,7 @@ class VeiculoRepositoryFilterTest {
     @Test
     void deveCombinarAnoESituacao() {
         List<Veiculo> encontrados = veiculoRepository.buscarComFiltros(
+            null,
             null,
             null,
             2020,
@@ -118,6 +124,7 @@ class VeiculoRepositoryFilterTest {
             null,
             null,
             null,
+            null,
             new BigDecimal("125000.00"),
             new BigDecimal("132000.00"),
             null
@@ -134,6 +141,7 @@ class VeiculoRepositoryFilterTest {
             null,
             null,
             null,
+            null,
             new BigDecimal("100000.00"),
             null,
             null
@@ -147,6 +155,7 @@ class VeiculoRepositoryFilterTest {
     @Test
     void deveFiltrarSomentePorPrecoMaximo() {
         List<Veiculo> encontrados = veiculoRepository.buscarComFiltros(
+            null,
             null,
             null,
             null,
@@ -168,9 +177,27 @@ class VeiculoRepositoryFilterTest {
             null,
             null,
             null,
+            null,
             null
         );
 
         assertThat(encontrados).hasSize(3);
+    }
+
+    @Test
+    void deveFiltrarPorTipoDeVeiculo() {
+        List<Veiculo> encontrados = veiculoRepository.buscarComFiltros(
+            null,
+            null,
+            TipoVeiculo.SEDA,
+            null,
+            null,
+            null,
+            null
+        );
+
+        assertThat(encontrados)
+            .extracting(veiculo -> veiculo.getModelo().getNome())
+            .containsExactlyInAnyOrder("Corolla", "Civic");
     }
 }

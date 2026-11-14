@@ -1,6 +1,7 @@
 package br.com.marinize.gestaoestoqueveiculos.dto;
 
 import br.com.marinize.gestaoestoqueveiculos.entity.StatusVeiculo;
+import br.com.marinize.gestaoestoqueveiculos.entity.TipoVeiculo;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
@@ -8,6 +9,8 @@ public record VeiculoRequest(
         @NotNull(message = "O identificador do modelo é obrigatório.")
         @Positive(message = "O identificador do modelo deve ser positivo.")
         Long modeloId,
+        @NotNull(message = "O tipo do veículo é obrigatório.")
+        TipoVeiculo tipo,
         @NotNull(message = "O ano de fabricação é obrigatório.")
         @Min(value = 1886, message = "O ano de fabricação informado é inválido.")
         @Max(value = 2100, message = "O ano de fabricação informado é inválido.")
