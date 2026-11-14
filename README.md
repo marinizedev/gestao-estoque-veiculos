@@ -5,7 +5,7 @@
 [![Spring Security](https://img.shields.io/badge/Spring%20Security-enabled-6DB33F?logo=springsecurity&logoColor=white)](https://spring.io/projects/spring-security)
 [![MySQL 8](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Maven](https://img.shields.io/badge/Maven-build-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
-[![Testes automatizados](https://img.shields.io/badge/testes-13%20automatizados-1572B6)](#testes-automatizados)
+[![Testes automatizados](https://img.shields.io/badge/testes-14%20automatizados-1572B6)](#testes-automatizados)
 [![Repositório no GitHub](https://img.shields.io/badge/GitHub-AutoStock-181717?logo=github&logoColor=white)](https://github.com/marinizedev/gestao-estoque-veiculos)
 
 Aplicação acadêmica para organizar o estoque de uma concessionária. O AutoStock combina uma interface web, uma API REST em Java com Spring Boot e persistência em MySQL. O escopo inclui cadastro e manutenção de marcas, modelos e veículos, filtros de consulta e acesso protegido por uma conta administrativa configurada localmente.
@@ -50,13 +50,13 @@ O sistema foi desenvolvido como projeto acadêmico de **Programação Orientada 
 
 - Autenticação por formulário e sessão, com um perfil `ADMIN` configurado por variáveis de ambiente.
 
-- Cadastro, consulta, edição e remoção de marcas e modelos.
+- Cadastro e consulta de marcas e modelos pela interface web; a API REST também oferece edição e remoção de marcas e modelos.
 
 - Cadastro, consulta, edição e remoção de veículos.
 
 - Associação de cada modelo a uma marca e de cada veículo a um modelo.
 
-- Filtros combináveis de veículos por marca, modelo, ano, preço mínimo, preço máximo e status.
+- Filtros combináveis de veículos por marca, modelo, tipo, ano, preço mínimo, preço máximo e status.
 
 - Painel com indicadores do estoque, vitrine ilustrativa, exportação CSV e impressão do relatório.
 
@@ -90,6 +90,8 @@ As validações de entrada são declaradas nos DTOs e executadas pelos controlad
 
 - O `modeloId` é obrigatório, deve ser positivo e precisa corresponder a um modelo existente.
 
+- O tipo é obrigatório e deve ser um dos valores `HATCH`, `SEDA`, `SUV`, `PICAPE`, `COUPE` ou `MOTO`.
+
 - O ano de fabricação é obrigatório e deve estar entre 1886 e 2100.
 
 - A cor é obrigatória e aceita até 50 caracteres; espaços externos são removidos antes de salvar.
@@ -103,6 +105,8 @@ As validações de entrada são declaradas nos DTOs e executadas pelos controlad
 ### Filtros
 
 - Marca e modelo aceitam correspondência parcial sem diferenciar maiúsculas de minúsculas.
+
+- Tipo é comparado pelo valor exato (`HATCH`, `SEDA`, `SUV`, `PICAPE`, `COUPE` ou `MOTO`).
 
 - Ano é comparado pelo valor exato.
 
@@ -150,12 +154,12 @@ Execute todos os testes na raiz do projeto:
 mvn clean test
 ```
 
-O conjunto atual possui **13 testes automatizados**. A suíte termina com `BUILD SUCCESS` quando todos passam.
+O conjunto atual possui **14 testes automatizados**. A suíte termina com `BUILD SUCCESS` quando todos passam.
 
 | Classe de teste | Tipo e quantidade | O que verifica e por que é importante |
 | --- | --- | --- |
 | `SecurityConfigTest` | Teste MVC com `@WebMvcTest` — 6 casos | Verifica que consultas e cadastros são negados sem login; que um administrador sem token CSRF não pode alterar dados; que o administrador autenticado pode consultar e cadastrar; e que o login real cria uma sessão reutilizável. Ajuda a evitar exposição da API ou operações de escrita sem proteção. |
-| `VeiculoRepositoryFilterTest` | Teste JPA com `@DataJpaTest` e H2 — 7 casos | Verifica geração dos IDs herdados nas três entidades; busca parcial de marca/modelo sem diferenciar caixa; combinação de ano e status; faixa inclusiva de preços; limites mínimo e máximo isolados; e listagem sem filtros. Ajuda a validar as consultas e o mapeamento JPA de forma reproduzível. |
+| `VeiculoRepositoryFilterTest` | Teste JPA com `@DataJpaTest` e H2 — 8 casos | Verifica geração dos IDs herdados nas três entidades; busca parcial de marca/modelo sem diferenciar caixa; filtro por tipo de veículo; combinação de ano e status; faixa inclusiva de preços; limites mínimo e máximo isolados; e listagem sem filtros. Ajuda a validar as consultas e o mapeamento JPA de forma reproduzível. |
 
 Os testes JPA usam H2 e não precisam de MySQL local. Os testes MVC isolam a camada web e simulam o serviço; portanto, a suíte automatizada não substitui a execução manual da aplicação com MySQL nem a demonstração da interface.
 
@@ -199,6 +203,8 @@ cd gestao-estoque-veiculos
 No MySQL Workbench, execute `docs/sql/criar-banco.sql`. Esse script cria o banco `gestao_estoque_veiculos` com codificação `utf8mb4`; ele **não cria as tabelas**.
 
 As tabelas são criadas ou atualizadas pelo Hibernate quando a aplicação inicia, usando a configuração JPA do projeto (`ddl-auto=update`).
+
+> **Já executou uma versão anterior?** O campo `tipo` é obrigatório. Se o banco foi criado antes dessa mudança, apague-o (`DROP DATABASE gestao_estoque_veiculos;`) e repita este passo, pois o Hibernate não preenche o novo campo nos registros antigos.
 
 ### 3. Criar e preencher o `.env`
 
@@ -265,6 +271,7 @@ Exemplos de consulta de veículos:
 
 ```
 GET /api/veiculos?marca=Toyota&ano=2022&status=DISPONIVEL
+GET /api/veiculos?tipo=SUV&status=DISPONIVEL
 GET /api/veiculos?modelo=Corolla
 GET /api/veiculos?precoMin=50000&precoMax=150000
 ```
@@ -321,7 +328,7 @@ Confirme que `APP_ADMIN_USERNAME` e `APP_ADMIN_PASSWORD` estão preenchidas. Ver
 
 ### Os testes terminam, mas aparece aviso do Surefire ao encerrar a JVM
 
-Confira o resultado final do Maven. Se aparecer `BUILD SUCCESS` e `Tests run: 13, Failures: 0, Errors: 0`, os testes foram aprovados; um aviso de encerramento da JVM do Surefire não altera esse resultado. Se persistir, rode as classes separadamente conforme a seção [Testes automatizados](#testes-automatizados) para localizar qual processo demora a encerrar.
+Confira o resultado final do Maven. Se aparecer `BUILD SUCCESS` e `Tests run: 14, Failures: 0, Errors: 0`, os testes foram aprovados; um aviso de encerramento da JVM do Surefire não altera esse resultado. Se persistir, rode as classes separadamente conforme a seção [Testes automatizados](#testes-automatizados) para localizar qual processo demora a encerrar.
 
 <a id="escopo-atual"></a>
 
@@ -331,7 +338,7 @@ Confira o resultado final do Maven. Se aparecer `BUILD SUCCESS` e `Tests run: 13
 
 - Há uma conta administrativa configurável, sem cadastro público ou múltiplos perfis de usuário.
 
-- A interface filtra por marca, modelo, ano, faixa de preço e status. O modelo atual não possui um campo independente de categoria comercial como SUV, sedã ou hatch.
+- A interface filtra por marca, modelo, tipo de veículo, ano, faixa de preço e status. O tipo é um atributo do veículo (`HATCH`, `SEDA`, `SUV`, `PICAPE`, `COUPE` ou `MOTO`).
 
 - As imagens da vitrine são ilustrativas e não constituem dados reais dos veículos cadastrados.
 

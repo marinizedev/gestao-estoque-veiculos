@@ -10,6 +10,10 @@ public class Veiculo extends EntidadeBase {
     @JoinColumn(name = "modelo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_veiculo_modelo"))
     private Modelo modelo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TipoVeiculo tipo;
+
     @Column(name = "ano_fabricacao", nullable = false)
     private Integer anoFabricacao;
 
@@ -28,9 +32,10 @@ public class Veiculo extends EntidadeBase {
 
     protected Veiculo() { }
 
-    public Veiculo(Modelo modelo, Integer anoFabricacao, String cor, BigDecimal preco,
+    public Veiculo(Modelo modelo, TipoVeiculo tipo, Integer anoFabricacao, String cor, BigDecimal preco,
                    Integer quilometragem, StatusVeiculo status) {
         this.modelo = modelo;
+        this.tipo = tipo;
         this.anoFabricacao = anoFabricacao;
         this.cor = cor;
         this.preco = preco;
@@ -40,6 +45,8 @@ public class Veiculo extends EntidadeBase {
 
     public Modelo getModelo() { return modelo; }
     public void setModelo(Modelo modelo) { this.modelo = modelo; }
+    public TipoVeiculo getTipo() { return tipo; }
+    public void setTipo(TipoVeiculo tipo) { this.tipo = tipo; }
     public Integer getAnoFabricacao() { return anoFabricacao; }
     public void setAnoFabricacao(Integer anoFabricacao) { this.anoFabricacao = anoFabricacao; }
     public String getCor() { return cor; }

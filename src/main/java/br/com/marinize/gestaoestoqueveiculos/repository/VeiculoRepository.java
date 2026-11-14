@@ -1,6 +1,7 @@
 package br.com.marinize.gestaoestoqueveiculos.repository;
 
 import br.com.marinize.gestaoestoqueveiculos.entity.StatusVeiculo;
+import br.com.marinize.gestaoestoqueveiculos.entity.TipoVeiculo;
 import br.com.marinize.gestaoestoqueveiculos.entity.Veiculo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,7 @@ public interface VeiculoRepository extends JpaRepository<Veiculo, Long> {
         JOIN m.marca ma
         WHERE (:marca IS NULL OR LOWER(ma.nome) LIKE LOWER(CONCAT('%', :marca, '%')))
           AND (:modelo IS NULL OR LOWER(m.nome) LIKE LOWER(CONCAT('%', :modelo, '%')))
+          AND (:tipo IS NULL OR v.tipo = :tipo)
           AND (:ano IS NULL OR v.anoFabricacao = :ano)
           AND (:precoMin IS NULL OR v.preco >= :precoMin)
           AND (:precoMax IS NULL OR v.preco <= :precoMax)
@@ -24,6 +26,7 @@ public interface VeiculoRepository extends JpaRepository<Veiculo, Long> {
     List<Veiculo> buscarComFiltros(
             @Param("marca") String marca,
             @Param("modelo") String modelo,
+            @Param("tipo") TipoVeiculo tipo,
             @Param("ano") Integer ano,
             @Param("precoMin") BigDecimal precoMin,
             @Param("precoMax") BigDecimal precoMax,

@@ -4,6 +4,7 @@ import br.com.marinize.gestaoestoqueveiculos.dto.VeiculoRequest;
 import br.com.marinize.gestaoestoqueveiculos.dto.VeiculoResponse;
 import br.com.marinize.gestaoestoqueveiculos.entity.Modelo;
 import br.com.marinize.gestaoestoqueveiculos.entity.StatusVeiculo;
+import br.com.marinize.gestaoestoqueveiculos.entity.TipoVeiculo;
 import br.com.marinize.gestaoestoqueveiculos.entity.Veiculo;
 import br.com.marinize.gestaoestoqueveiculos.exception.RecursoNaoEncontradoException;
 import br.com.marinize.gestaoestoqueveiculos.repository.ModeloRepository;
@@ -23,25 +24,26 @@ public class VeiculoService {
         this.modeloRepository = modeloRepository;
     }
     @Transactional(readOnly = true)
-    public List<VeiculoResponse> listar(String marca, String modelo, Integer ano, BigDecimal precoMin,
-                                        BigDecimal precoMax, StatusVeiculo status) {
+    public List<VeiculoResponse> listar(String marca, String modelo, TipoVeiculo tipo, Integer ano,
+                                        BigDecimal precoMin, BigDecimal precoMax, StatusVeiculo status) {
         if (precoMin != null && precoMax != null && precoMin.compareTo(precoMax) > 0) {
             throw new IllegalArgumentException("O preço mínimo não pode ser maior que o preço máximo.");
         }
-        return veiculoRepository.buscarComFiltros(marca, modelo, ano, precoMin, precoMax, status)
+        return veiculoRepository.buscarComFiltros(marca, modelo, tipo, ano, precoMin, precoMax, status)
                 .stream().map(this::paraResposta).toList();
     }
     @Transactional(readOnly = true)
     public VeiculoResponse buscar(Long id) { return paraResposta(obterVeiculo(id)); }
     public VeiculoResponse criar(VeiculoRequest request) {
         Modelo modelo = obterModelo(request.modeloId());
-        Veiculo veiculo = new Veiculo(modelo, request.anoFabricacao(), request.cor().trim(),
+        Veiculo veiculo = new Veiculo(modelo, request.tipo(), request.anoFabricacao(), request.cor().trim(),
                 request.preco(), request.quilometragem(), request.status());
         return paraResposta(veiculoRepository.save(veiculo));
     }
     public VeiculoResponse atualizar(Long id, VeiculoRequest request) {
         Veiculo veiculo = obterVeiculo(id);
         veiculo.setModelo(obterModelo(request.modeloId()));
+        veiculo.setTipo(request.tipo());
         veiculo.setAnoFabricacao(request.anoFabricacao());
         veiculo.setCor(request.cor().trim());
         veiculo.setPreco(request.preco());
@@ -59,6 +61,6 @@ public class VeiculoService {
     private VeiculoResponse paraResposta(Veiculo v) {
         return new VeiculoResponse(v.getId(), v.getModelo().getId(), v.getModelo().getNome(),
                 v.getModelo().getMarca().getId(), v.getModelo().getMarca().getNome(),
-                v.getAnoFabricacao(), v.getCor(), v.getPreco(), v.getQuilometragem(), v.getStatus());
+                v.getTipo(), v.getAnoFabricacao(), v.getCor(), v.getPreco(), v.getQuilometragem(), v.getStatus());
     }
 }

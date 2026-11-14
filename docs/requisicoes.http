@@ -29,6 +29,7 @@ Content-Type: application/json
 
 {
   "modeloId": 1,
+  "tipo": "SEDA",
   "anoFabricacao": 2022,
   "cor": "Prata",
   "preco": 125000.00,
@@ -41,6 +42,9 @@ GET {{baseUrl}}/api/veiculos
 
 ### Filtrar por marca, ano e status
 GET {{baseUrl}}/api/veiculos?marca=Toyota&ano=2022&status=DISPONIVEL
+
+### Filtrar por tipo de veículo (HATCH, SEDA, SUV, PICAPE, COUPE ou MOTO)
+GET {{baseUrl}}/api/veiculos?tipo=SUV
 
 ### Filtrar por faixa de preço
 GET {{baseUrl}}/api/veiculos?precoMin=50000&precoMax=150000
@@ -60,6 +64,7 @@ Content-Type: application/json
 
 {
   "modeloId": 1,
+  "tipo": "SEDA",
   "anoFabricacao": 2022,
   "cor": "Prata",
   "preco": 120000.00,

@@ -157,6 +157,20 @@ function statusClass(status) {
   })[status] || "status-discontinued";
 }
 
+/* --- Tipo do veículo --- */
+const TIPOS_VEICULO = {
+  HATCH: "Hatch",
+  SEDA: "Sedã",
+  SUV: "SUV",
+  PICAPE: "Picape",
+  COUPE: "Cupê",
+  MOTO: "Moto",
+};
+
+function tipoLabel(tipo) {
+  return TIPOS_VEICULO[tipo] || tipo || "—";
+}
+
 /* --- Ícone do veículo --- */
 function vehicleIcon() {
   return `
@@ -361,7 +375,7 @@ function renderRows(rows) {
             <span class="vehicle-thumb">${vehicleIcon()}</span>
             <span>
               <span class="vehicle-name">${esc(vehicle.modelo || "Modelo")}</span>
-              <span class="vehicle-brand">${esc(vehicle.marca || "Marca não informada")} · ${esc(vehicle.cor || "")}</span>
+              <span class="vehicle-brand">${esc(vehicle.marca || "Marca não informada")} · ${esc(tipoLabel(vehicle.tipo))} · ${esc(vehicle.cor || "")}</span>
             </span>
           </div>
         </td>
@@ -478,6 +492,7 @@ async function loadVehicles() {
   const params = new URLSearchParams();
 
   const status = $("#filterStatus").value;
+  const tipo = $("#filterTipo").value;
   const year = $("#filterYear").value;
   const search = $("#filterSearch").value.trim().toLocaleLowerCase("pt-BR");
 
@@ -504,6 +519,7 @@ async function loadVehicles() {
   }
 
   if (status) params.set("status", status);
+  if (tipo) params.set("tipo", tipo);
   if (year) params.set("ano", year);
 
   // Se escolher um modelo sem escolher marca, também restringimos à marca dele.
@@ -520,7 +536,7 @@ async function loadVehicles() {
     // A busca textual continua sendo feita no navegador.
     if (search) {
       rows = rows.filter((vehicle) =>
-        [vehicle.marca, vehicle.modelo, vehicle.cor].some((value) =>
+        [vehicle.marca, vehicle.modelo, vehicle.cor, tipoLabel(vehicle.tipo)].some((value) =>
           String(value || "").toLocaleLowerCase("pt-BR").includes(search)
         )
       );
@@ -550,6 +566,9 @@ function renderVehicleFields(record) {
     .join("");
 
   const isSelected = (status) => (record?.status === status ? "selected" : "");
+  const tipoOptions = Object.entries(TIPOS_VEICULO)
+    .map(([valor, rotulo]) => `<option value="${valor}" ${record?.tipo === valor ? "selected" : ""}>${rotulo}</option>`)
+    .join("");
 
   $("#dialogFields").innerHTML = `
     <div class="field full">
@@ -557,6 +576,13 @@ function renderVehicleFields(record) {
       <select id="field-modeloId" name="modeloId" required>
         <option value="">Selecione</option>
         ${modelOptions}
+      </select>
+    </div>
+    <div class="field">
+      <label for="field-tipo">Tipo de veículo</label>
+      <select id="field-tipo" name="tipo" required>
+        <option value="">Selecione</option>
+        ${tipoOptions}
       </select>
     </div>
     ${field("Ano de fabricação", "anoFabricacao", "number", record?.anoFabricacao ?? "")}
@@ -661,6 +687,7 @@ async function saveForm(event) {
     method = state.editingId ? "PUT" : "POST";
     payload = {
       modeloId: Number(form.get("modeloId")),
+      tipo: form.get("tipo"),
       anoFabricacao: Number(form.get("anoFabricacao")),
       cor: form.get("cor").trim(),
       preco: Number(form.get("preco")),
@@ -710,6 +737,7 @@ function exportCsv() {
     "ID",
     "Marca",
     "Modelo",
+    "Tipo",
     "Ano de fabricação",
     "Cor",
     "Preço",
@@ -721,6 +749,7 @@ function exportCsv() {
     vehicle.id,
     vehicle.marca,
     vehicle.modelo,
+    tipoLabel(vehicle.tipo),
     vehicle.anoFabricacao,
     vehicle.cor,
     Number(vehicle.preco || 0).toFixed(2),
@@ -820,6 +849,7 @@ async function prepareLogout(event) {
 function clearFilterFields() {
   $("#filterSearch").value = "";
   $("#filterStatus").value = "";
+  $("#filterTipo").value = "";
   $("#filterYear").value = "";
   $("#filterBrand").value = "";
   $("#filterModel").value = "";
@@ -875,6 +905,7 @@ $("#showroomGrid").addEventListener("click", (event) => {
 /* --- Filtros --- */
 $("#filterSearch").addEventListener("input", loadVehicles);
 $("#filterStatus").addEventListener("change", loadVehicles);
+$("#filterTipo").addEventListener("change", loadVehicles);
 $("#filterYear").addEventListener("input", loadVehicles);
 
 $("#filterBrand").addEventListener("change", () => {
